@@ -1,0 +1,21 @@
+{
+  "name": "natal-chart",
+  "private": true,
+  "version": "0.0.0",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "vite build --base=/natal-chart/",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "vant": "^3.4.8",
+    "vue": "^3.2.25",
+    "vue-router": "4"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^2.3.1",
+    "unplugin-vue-components": "^0.21.1",
+    "vite": "^2.9.5",
+    "vite-plugin-style-import": "1.4.1"
+  }
+}
