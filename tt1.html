@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>出大头工具</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --primary: #2196F3; --secondary: #4CAF50; --accent: #FF9800;
+            --card-bg: #fff; --background: #f5f5f5; --text: #333;
+        }
+        body { font-family: sans-serif; background: var(--background); }
+        .container { max-width: 800px; margin: 0 auto; padding: 20px; }
+        .card { background: var(--card-bg); border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .title { text-align: center; color: var(--primary); margin-bottom: 20px; }
+        .input-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; color: var(--text); font-weight: 500; }
+        input, textarea, select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 16px; }
+        textarea { min-height: 150px; resize: vertical; font-family: monospace; }
+        .btn { background: var(--primary); color: white; border: none; padding: 12px 20px; border-radius: 5px; cursor: pointer; font-size: 16px; width: 100%; margin-top: 10px; }
+        .btn:hover { opacity: 0.9; }
+        .btn-success { background: var(--secondary); }
+        .btn-warning { background: var(--accent); }
+        .result { background: #f8f9fa; border-left: 4px solid var(--primary); padding: 15px; margin: 15px 0; border-radius: 5px; }
+        .tab { display: flex; border-bottom: 2px solid #eee; margin-bottom: 20px; }
+        .tab-btn { padding: 10px 20px; cursor: pointer; border: none; background: none; }
+        .tab-btn.active { border-bottom: 3px solid var(--primary); font-weight: bold; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .toast { position: fixed; bottom: 20px; right: 20px; background: var(--primary); color: white; padding: 10px 20px; border-radius: 5px; animation: slideIn 0.3s; }
+        @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+        .base-display { display: flex; gap: 20px; margin: 20px 0; }
+        .base-item { flex: 1; text-align: center; }
+        .base-value { font-size: 24px; font-weight: bold; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="title">出大头工具 - 纯前端版</h1>
+        
+        <div class="tab">
+            <button class="tab-btn active" onclick="switchTab('query')">查询工具</button>
+            <button class="tab-btn" onclick="switchTab('extract')">基址抓取</button>
+            <button class="tab-btn" onclick="switchTab('source')">源码查看</button>
+        </div>
+        
+        <!-- 查询工具页 -->
+        <div id="query-tab" class="tab-content active">
+            <div class="card">
+                <h2>基址设置</h2>
+                <div class="base-display">
+                    <div class="base-item">
+                        <div>基址 1</div>
+                        <div id="base1-display" class="base-value">2020000000</div>
+                    </div>
+                    <div class="base-item">
+                        <div>基址 2</div>
+                        <div id="base2-display" class="base-value">-5159473</div>
+                    </div>
+                </div>
+                <button class="btn btn-warning" onclick="showBaseSettings()">修改基址</button>
+            </div>
+            
+            <div class="card">
+                <h2>学号查询</h2>
+                <div class="input-group">
+                    <label for="student-id">输入学号：</label>
+                    <input type="number" id="student-id" placeholder="例如：2020123456">
+                </div>
+                <button class="btn" onclick="generateLink()">生成查询链接</button>
+                <div id="link-result" class="result" style="display:none;">
+                    <h4>生成的链接：</h4>
+                    <div id="generated-link"></div>
+                    <button class="btn btn-success" onclick="openLink()" style="margin-top:10px;">在浏览器打开</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 基址抓取页 -->
+        <div id="extract-tab" class="tab-content">
+            <div class="card">
+                <h2>基址自动抓取</h2>
+                <p>使用以下方法获取页面源码：</p>
+                
+                <div class="input-group">
+                    <label>方法1：手动粘贴HTML源码</label>
+                    <textarea id="source-input" placeholder="在此粘贴网页HTML源码..."></textarea>
+                </div>
+                
+                <div class="input-group">
+                    <label>方法2：输入页面URL（需要CORS支持）</label>
+                    <input type="text" id="page-url" placeholder="http://uis.hljucm.net" value="http://uis.hljucm.net">
+                </div>
+                
+                <div class="input-group">
+                    <label>方法3：使用书签工具（推荐）</label>
+                    <p>将以下链接拖到书签栏，然后在目标页面点击：</p>
+                    <a href="javascript:(function(){var s=document.documentElement.outerHTML;var t=document.createElement('textarea');t.value=s;document.body.appendChild(t);t.select();document.execCommand('copy');document.body.removeChild(t);alert('页面源码已复制到剪贴板！');})();" 
+                       style="display:block;padding:10px;background:#eee;border-radius:5px;margin:10px 0;">
+                       🔍 复制页面源码
+                    </a>
+                </div>
+                
+                <button class="btn" onclick="extractBaseFromSource()">开始提取基址</button>
+                
+                <div id="extract-result" class="result" style="display:none;">
+                    <h4>提取结果：</h4>
+                    <div>基址1（登录名）：<span id="extracted-base1" class="base-value">未找到</span></div>
+                    <div>基址2（userId）：<span id="extracted-base2" class="base-value">未找到</span></div>
+                    <button class="btn btn-success" onclick="applyExtractedBase()">应用提取的基址</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 源码查看页 -->
+        <div id="source-tab" class="tab-content">
+            <div class="card">
+                <h2>源码解析</h2>
+                <textarea id="source-viewer" placeholder="此处显示HTML源码..." readonly style="height:300px;"></textarea>
+                <button class="btn" onclick="loadSampleSource()">加载示例源码</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 基址设置模态框 -->
+    <div id="base-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:1000;">
+        <div style="background:white;width:400px;margin:100px auto;padding:20px;border-radius:10px;">
+            <h3>设置基址</h3>
+            <div class="input-group">
+                <label>基址 1：</label>
+                <input type="number" id="modal-base1" value="2020000000">
+            </div>
+            <div class="input-group">
+                <label>基址 2：</label>
+                <input type="number" id="modal-base2" value="-5159473">
+            </div>
+            <div style="display:flex;gap:10px;margin-top:20px;">
+                <button class="btn" onclick="saveBaseSettings()">保存</button>
+                <button class="btn btn-warning" onclick="hideBaseSettings()" style="background:#999;">取消</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // 全局变量
+        let currentBase1 = 2020000000;
+        let currentBase2 = -5159473;
+        let currentLink = '';
+        
+        // 切换标签页
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            document.querySelector(`[onclick="switchTab('${tabName}')"]`).classList.add('active');
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+        }
+        
+        // 生成查询链接
+        function generateLink() {
+            const studentId = document.getElementById('student-id').value;
+            if (!studentId) {
+                showToast('请输入学号');
+                return;
+            }
+            
+            const id = currentBase2 - currentBase1 + parseInt(studentId);
+            const randomNum = Math.floor(1000 + Math.random() * 9000);
+            currentLink = `http://uis.hljucm.net:8013/_ids/parsePicServlet?userId=${id}&tt=${randomNum}`;
+            
+            document.getElementById('generated-link').textContent = currentLink;
+            document.getElementById('link-result').style.display = 'block';
+            showToast('链接生成成功');
+        }
+        
+        // 打开链接
+        function openLink() {
+            if (currentLink) {
+                window.open(currentLink, '_blank');
+            }
+        }
+        
+        // 显示基址设置
+        function showBaseSettings() {
+            document.getElementById('modal-base1').value = currentBase1;
+            document.getElementById('modal-base2').value = currentBase2;
+            document.getElementById('base-modal').style.display = 'block';
+        }
+        
+        // 隐藏基址设置
+        function hideBaseSettings() {
+            document.getElementById('base-modal').style.display = 'none';
+        }
+        
+        // 保存基址设置
+        function saveBaseSettings() {
+            currentBase1 = parseInt(document.getElementById('modal-base1').value);
+            currentBase2 = parseInt(document.getElementById('modal-base2').value);
+            
+            // 保存到localStorage
+            localStorage.setItem('base1', currentBase1);
+            localStorage.setItem('base2', currentBase2);
+            
+            // 更新显示
+            document.getElementById('base1-display').textContent = currentBase1;
+            document.getElementById('base2-display').textContent = currentBase2;
+            
+            hideBaseSettings();
+            showToast('基址保存成功');
+        }
+        
+        // 从源码提取基址
+        async function extractBaseFromSource() {
+            showToast('开始提取基址...');
+            
+            let htmlSource = '';
+            
+            // 优先使用用户输入的源码
+            htmlSource = document.getElementById('source-input').value;
+            
+            // 如果没有输入，尝试从URL获取
+            if (!htmlSource) {
+                const url = document.getElementById('page-url').value;
+                if (url) {
+                    try {
+                        htmlSource = await fetchPageSource(url);
+                    } catch (error) {
+                        showToast('获取页面源码失败，请尝试手动粘贴');
+                    }
+                }
+            }
+            
+            if (!htmlSource) {
+                showToast('请输入或获取页面源码');
+                return;
+            }
+            
+            // 在源码查看器中显示
+            document.getElementById('source-viewer').value = htmlSource.substring(0, 5000) + (htmlSource.length > 5000 ? '\n\n...(内容过长，已截断)' : '');
+            
+            // 解析基址
+            const extracted = extractBaseInfo(htmlSource);
+            
+            // 显示结果
+            document.getElementById('extracted-base1').textContent = extracted.base1 || '未找到';
+            document.getElementById('extracted-base2').textContent = extracted.base2 || '未找到';
+            document.getElementById('extracted-base1').style.color = extracted.base1 ? 'green' : 'red';
+            document.getElementById('extracted-base2').style.color = extracted.base2 ? 'green' : 'red';
+            document.getElementById('extract-result').style.display = 'block';
+            
+            // 保存提取结果到全局变量
+            window.extractedBase1 = extracted.base1;
+            window.extractedBase2 = extracted.base2;
+            
+            showToast(`基址提取完成: 找到${extracted.base1 ? 1 : 0}个基址1, ${extracted.base2 ? 1 : 0}个基址2`);
+        }
+        
+        // 获取页面源码
+        async function fetchPageSource(url) {
+            // 使用CORS代理
+            const proxyUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent(url);
+            
+            try {
+                const response = await fetch(proxyUrl);
+                const data = await response.json();
+                return data.contents;
+            } catch (error) {
+                console.error('通过代理获取失败:', error);
+                throw error;
+            }
+        }
+        
+        // 解析基址信息
+        function extractBaseInfo(htmlSource) {
+            const result = { base1: '', base2: '' };
+            
+            // 提取基址1：10位数字
+            const base1Patterns = [
+                /value\s*=\s*["'](\d{10})["']/i,
+                /<input[^>]*id\s*=\s*["']loginName["'][^>]*value\s*=\s*["'](\d{10})["']/i,
+                /登录名[^>]*>.*?<input[^>]*value\s*=\s*["'](\d{10})["']/i
+            ];
+            
+            for (const pattern of base1Patterns) {
+                const match = htmlSource.match(pattern);
+                if (match && match[1]) {
+                    result.base1 = match[1];
+                    break;
+                }
+            }
+            
+            // 提取基址2：userId
+            const base2Patterns = [
+                /parsePicServlet\?userId=(\d+)&tt=/i,
+                /userId=(\d+)/i,
+                /picServlet[^"]*userId=(\d+)/i
+            ];
+            
+            for (const pattern of base2Patterns) {
+                const match = htmlSource.match(pattern);
+                if (match && match[1]) {
+                    result.base2 = match[1];
+                    break;
+                }
+            }
+            
+            return result;
+        }
+        
+        // 应用提取的基址
+        function applyExtractedBase() {
+            if (window.extractedBase1) {
+                currentBase1 = parseInt(window.extractedBase1);
+                document.getElementById('base1-display').textContent = currentBase1;
+            }
+            if (window.extractedBase2) {
+                currentBase2 = parseInt(window.extractedBase2);
+                document.getElementById('base2-display').textContent = currentBase2;
+            }
+            
+            saveBaseSettings();
+        }
+        
+        // 加载示例源码
+        function loadSampleSource() {
+            const sampleSource = `<!DOCTYPE html>
+<html>
+<head><title>教务系统示例</title></head>
+<body>
+    <div id="loginNameLi">
+        登录名：<input type="text" id="loginName" value="2020123456" readonly>
+    </div>
+    <div>
+        <img src="/_ids/parsePicServlet?userId=1234567890&tt=9876" alt="用户头像">
+    </div>
+</body>
+</html>`;
+            
+            document.getElementById('source-input').value = sampleSource;
+            document.getElementById('source-viewer').value = sampleSource;
+            showToast('示例源码已加载');
+        }
+        
+        // 显示提示
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+        
+        // 初始化
+        function init() {
+            // 从localStorage加载基址
+            const savedBase1 = localStorage.getItem('base1');
+            const savedBase2 = localStorage.getItem('base2');
+            
+            if (savedBase1) currentBase1 = parseInt(savedBase1);
+            if (savedBase2) currentBase2 = parseInt(savedBase2);
+            
+            // 更新显示
+            document.getElementById('base1-display').textContent = currentBase1;
+            document.getElementById('base2-display').textContent = currentBase2;
+            
+            // 加载示例源码
+            loadSampleSource();
+            
+            showToast('应用已加载，使用书签工具获取页面源码');
+        }
+        
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
